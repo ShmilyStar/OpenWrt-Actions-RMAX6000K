@@ -68,7 +68,8 @@ jobs:
       if: env.BARK_TOKEN
       continue-on-error: true
       run: |
-        curl -k "https://api.day.app/${{ env.BARK_TOKEN }}/🎉开始编译hanwckf 固件😋"        
+        curl -k https://api.day.app/${{ env.BARK_TOKEN }}/🎉开始编译hanwckf固件
+        
     
     - name: 下载源码
       working-directory: /workdir
@@ -92,18 +93,10 @@ jobs:
 
     - name: 加载自定义配置
       run: |
-        #[ -e files ] && mv files openwrt/files
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
-
-    #- name: SSH 连接
-    #  uses: P3TERX/ssh2actions@v1.0.0
-    #  if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
-    #  env:
-    #    TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-    #    TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
 
     - name: 下载包
       id: package
@@ -172,5 +165,5 @@ jobs:
     - name: BARK 通知
       if: env.BARK_TOKEN
       continue-on-error: true
-      run: |
-        curl -k "https://api.day.app/${{ env.BARK_TOKEN }}/🎉编译hanwckf 固件完成😋"  
+      run: 
+        curl -k https://api.day.app/${{ env.BARK_TOKEN }}/🎉编译hanwckf固件完成"  
