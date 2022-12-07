@@ -112,7 +112,7 @@ jobs:
       run: |
         cd openwrt
         echo -e "$(nproc) thread compile"
-        make -j$(nproc) || make -j1 || make -j1 V=s || (curl -k "https://api.day.app/${{ env.BARK_TOKEN }}/编译hanwckf 固件失败";exit 1)
+        make -j$(nproc) || make -j1 || make -j1 V=s || (curl -k https://api.day.app/${{ env.BARK_TOKEN }}/编译hanwckf固件失败;exit 1)
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: 检查可用容量
