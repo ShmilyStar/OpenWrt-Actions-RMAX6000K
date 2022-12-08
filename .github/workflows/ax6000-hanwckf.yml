@@ -42,8 +42,6 @@ env:
   UPLOAD_RELEASE: true
   SCKEY: ${{ secrets.SCKEY }}
   BARK_TOKEN: ${{ secrets.BARK_TOKEN }}
-  #TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-  #TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
   TZ: Asia/Shanghai
   
 jobs:
@@ -107,7 +105,7 @@ jobs:
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
-    - name: 整合固件
+    - name: 编译固件
       id: compile
       run: |
         cd openwrt
@@ -124,8 +122,9 @@ jobs:
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: |
         cd openwrt/bin/targets/*/*
-        echo "xxxxxxxxxxxxg"
-        ls
+        echo "-------------固件列表------------------"
+        ls -alh
+        echo "-------------固件列表------------------"
         rm -rf packages
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
@@ -165,5 +164,6 @@ jobs:
     - name: BARK 通知
       if: env.BARK_TOKEN
       continue-on-error: true
-      run: 
-        curl -k https://api.day.app/${{ env.BARK_TOKEN }}/🎉编译hanwckf固件完成"  
+      run: |
+        curl -k https://api.day.app/${{ env.BARK_TOKEN }}/🎉编译固件完成
+        
