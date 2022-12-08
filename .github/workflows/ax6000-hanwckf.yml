@@ -140,10 +140,10 @@ jobs:
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        time=$(date +%Y.%m.%d)
-        Rtime=$(date +%Y.%m.%d-%H:%M)
-        release_tag="ax6000-hanwckf-OpenWrt-$time"
-        release_name="ax6000-hanwckf-OpenWrt-$Rtime"
+        time=$(date +%Y-%m-%d)
+        Rtime=$(date +%Y-%m-%d-%H-%M)
+        release_tag="ax6000-hanwckf-$Rtime"
+        release_name="ax6000-hanwckf-$Rtime"
         echo "默认网关：192.168.10.1
         默认密码：password" >> release.txt
         echo "release_name=$release_name" >> $GITHUB_OUTPUT
