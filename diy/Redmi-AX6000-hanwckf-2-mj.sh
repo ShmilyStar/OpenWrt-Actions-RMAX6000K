@@ -10,7 +10,7 @@
 # Description: OpenWrt DIY script part 2 (After Update feeds)
 #
 #修改默认IP
-sed -i 's/192.168.1.1/192.168.102.1/g' package/base-files/files/bin/config_generate   # 定制默认IP
+sed -i 's/192.168.1.1/192.168.10.1/g' package/base-files/files/bin/config_generate   # 定制默认IP
 # sed -i 's/ImmortalWrt/TPlink/g' package/base-files/files/bin/config_generate   # 定制默认主机名字
 
 # 移除重复软件包
