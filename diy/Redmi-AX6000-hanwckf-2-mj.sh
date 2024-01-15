@@ -39,6 +39,8 @@ ls pkg_tmp_dir/
 ls pkg_tmp_dir/openwrt_2305_packages/lang/golang
 mv pkg_tmp_dir/openwrt_2305_packages/lang/golang feeds/packages/lang/golang
 ls feeds/packages/lang/golang
+cat feeds\packages\lang\golang\golang-version.mk
+exit 1
 # 科学上网插件
 # svn co https://github.com/kiddin9/openwrt-bypass/trunk/luci-app-bypass package/luci-app-bypass
 # svn co https://github.com/vernesong/OpenClash/trunk/luci-app-openclash package/luci-app-openclash
