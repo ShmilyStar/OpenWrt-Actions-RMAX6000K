@@ -87,10 +87,13 @@ jobs:
       run: cd openwrt && ./scripts/feeds update -a
 
     - name: 改变golange版本
-      run: git clone -b master --single-branch https://github.com/immortalwrt/packages.git packages_master && rm -rf ./feeds/packages/lang/golang && mv ./packages_master/lang/golang ./feeds/packages/lang && rm -rf ./packages_master
+      run: cd openwrt && git clone -b master --single-branch https://github.com/immortalwrt/packages.git packages_master && rm -rf ./feeds/packages/lang/golang && mv ./packages_master/lang/golang ./feeds/packages/lang && rm -rf ./packages_master
 
     - name: 安装软件源
       run: cd openwrt && ./scripts/feeds install -a
+
+    - name: 展示golange版本
+      run: cd openwrt && cat ./feeds/packages/lang/golang/golang/Makefile | grep GO_VERSION 
 
     - name: 加载自定义配置
       run: |
