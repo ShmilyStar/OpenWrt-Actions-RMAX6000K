@@ -87,7 +87,7 @@ jobs:
       run: cd openwrt && ./scripts/feeds update -a
 
     - name: 改变golange版本
-      run: cd openwrt && git clone --depth 1 -b openwrt-23.05 https://github.com/openwrt/packages/ pkg_tmp_dir/openwrt_2305_packages && ls pkg_tmp_dir/ && ls pkg_tmp_dir/openwrt_2305_packages/lang/golang && mv pkg_tmp_dir/openwrt_2305_packages/lang/golang feeds/packages/lang/golang && ls feeds/packages/lang/golang && cat feeds/packages/lang/golang/golang-version.mk
+      run: cd openwrt && rm -rf feeds/packages/lang/golang && git clone --depth 1 -b openwrt-23.05 https://github.com/openwrt/packages/ pkg_tmp_dir/openwrt_2305_packages && ls pkg_tmp_dir/ && ls pkg_tmp_dir/openwrt_2305_packages/lang/golang && mv pkg_tmp_dir/openwrt_2305_packages/lang/golang feeds/packages/lang/golang && ls feeds/packages/lang/golang && cat feeds/packages/lang/golang/golang-version.mk
 
     - name: 安装软件源
       run: cd openwrt && ./scripts/feeds install -a
