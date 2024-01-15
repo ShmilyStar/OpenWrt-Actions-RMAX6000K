@@ -32,6 +32,7 @@ rm -rf feeds/luci/applications/luci-app-passwall/
 # git clone --depth 1 https://github.com/Jason6111/luci-app-netdata package/luci-app-netdata
 # git clone --depth 1 -b lede https://github.com/pymumu/luci-app-smartdns package/luci-app-smartdns
 git clone https://github.com/xiaorouji/openwrt-passwall package/luci-app-passwall
+git clone https://github.com/xiaorouji/openwrt-passwall-packages package/luci-app-passwall-packages
 
 # 科学上网插件
 # svn co https://github.com/kiddin9/openwrt-bypass/trunk/luci-app-bypass package/luci-app-bypass
