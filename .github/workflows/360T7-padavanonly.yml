@@ -99,7 +99,6 @@ jobs:
         cd openwrt
         git config --global user.name 'ShmilyStar'
         git config --global user.email 'ShmilyStar@github.com'
-        git add config/${{ env.DEVICE_NAME }}.txt
         git commit -m "Add ${{ env.DEVICE_NAME }}.txt to config directory"
         git push
 
