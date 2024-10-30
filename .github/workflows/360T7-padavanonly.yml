@@ -96,7 +96,6 @@ jobs:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
 
     - name: 生成"${{ matrix.target }}"配置文件
-      if: env.REPO_TOKEN
       id: compile
       run: |
         cd openwrt
