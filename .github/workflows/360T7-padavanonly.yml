@@ -95,13 +95,6 @@ jobs:
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
 
-    - name: 生成"${{ matrix.target }}"配置文件
-      id: compile
-      run: |
-        cd openwrt
-        ./scripts/diffconfig.sh > ${GITHUB_WORKSPACE}/${CONFIG_FILE}
-        cp -Rf ${GITHUB_WORKSPACE}/${CONFIG_FILE} ${GITHUB_WORKSPACE}/config.txt
-
     - name: 上传配置文件在 Github Artifacts
       uses: actions/upload-artifact@main
       with:
