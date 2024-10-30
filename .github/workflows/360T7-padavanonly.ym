@@ -1,103 +1,207 @@
 #
-# Copyright (c) 2019-2020 P3TERX <https://p3terx.com>
+# 请大家记住拉取的是我的 ShmilyStar/build-actions 仓库，拉取的是其他仓库有问题，别问我，我也不清楚什么问题
 #
-# This is free software, licensed under the MIT License.
-# See /LICENSE for more information.
+# 因为SSH连接配置固件直接编译，会给github停止编译的,所以要另外触发启动编译程序
 #
-# https://github.com/P3TERX/Actions-OpenWrt
-# Description: Build OpenWrt using GitHub Actions
+# 一般情况下都能触发启动编译的，除非没设置好密匙，或者密匙过期了，或者密匙错误之类的
+#
+# REPO_TOKEN密匙制作教程：https://git.io/jm.md
+#
 #
 
-name: 360T7-padavanonly
-
+name: Immortalwrt-天灵
 on:
-  repository_dispatch:
   workflow_dispatch:
     inputs:
-      ssh:
-        description: 'SSH connection to Actions'
+      REPO_BRANCH:
+        description: '天灵源码-请选择分支'
+        required: true
+        default: 'openwrt-21.02'
+        type: choice
+        options:
+          - 'openwrt-23.05'
+          - 'openwrt-21.02'
+          - 'openwrt-18.06'
+          - 'openwrt-18.06-k5.4'
+          - 'master'
+          - 'mt798x'
+      CONFIG_FILE:
+        description: '请选择[seed文件夹内]的配置文件'
+        required: true
+        default: 'x86_64'
+        type: choice
+        options:
+          - 'x86_64'
+          - 'mt7981'
+      CPU_SELECTION:
+        description: 'CPU优选,增加编译速度'
+        required: true
+        default: '默认'
+        type: choice
+        options:
+          - '默认'
+          - '8370C'
+          - '8272CL'
+          - '8171M'
+      INFORMATION_NOTICE:
+        description: 'Telegram或pushplus信息通知'
+        required: true
+        default: '关闭'
+        type: choice
+        options:
+          - '关闭'
+          - 'Telegram'
+          - 'Pushplus'
+      SSH_ACTION:
+        description: 'SSH远程配置固件'
         required: false
         default: 'false'
+        type: boolean
+      UPLOAD_FIRMWARE:
+        description: '上传固件到 Github Artifacts'
+        required: false
+        default: 'true'
+        type: boolean
+      UPLOAD_RELEASE:
+        description: '发布固件到 Github Releases'
+        required: false
+        default: 'false'
+        type: boolean
+      CACHEWRTBUILD_SWITCH:
+        description: '缓存加速编译'
+        required: false
+        default: 'true'
+        type: boolean
+      UPDATE_FIRMWARE_ONLINE:
+        description: '增加在线更新固件功能/自动打包Amlogic_Rockchip系列固件'
+        required: false
+        default: 'true'
+        type: boolean
+      COMPILATION_INFORMATION:
+        description: '是否显示编译信息'
+        required: false
+        default: 'true'
+        type: boolean
 
-#定时触发开始编译
-  #schedule:
-  #- cron: 0 17 * * 1
+
+# 定时触发开启开始编译(把下面两个#去掉开启,时间设置请看定时开启编译说明)
+#  schedule:
+#   - cron: 35 18 * * *
 
 env:
-  REPO_URL: https://github.com/padavanonly/immortalwrtARM
-  REPO_BRANCH: mt7981
-  FEEDS_CONF: feeds.conf.default
-  CONFIG_FILE: ./config/360T7-immortalwrt.config
-  DIY_P1_SH: ./diy/diy-360T7-immortalwrt-1.sh
-  DIY_P2_SH: ./diy/diy-360T7-immortalwrt-2.sh
-  UPLOAD_BIN_DIR: false
-  UPLOAD_FIRMWARE: true
-  UPLOAD_RELEASE: true
-  SCKEY: ${{ secrets.SCKEY }}
-  TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+  GITHUB_LINK: https://github.com/${{github.repository}}
+  GIT_ACTOR: ${{github.actor}}
+  GIT_REPOSITORY: ${{github.repository}}
+  RUN_NUMBER: ${{github.run_number}}
+  RUN_WORKFLOW: ${{github.workflow}}
+  REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
+  PUSH_PLUS_TOKEN: ${{ secrets.PUSH_PLUS_TOKEN }}
+  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
   TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
   TZ: Asia/Shanghai
-  
+
 jobs:
   build:
+    name: 启动"${{ matrix.target }}-${{ github.event.inputs.REPO_BRANCH }}"触发编译
     runs-on: ubuntu-22.04
-
-    steps:
-    - name: 检查
-      uses: actions/checkout@main
+    if: ${{ github.event.repository.owner.id }} == ${{ github.event.sender.id }}
     
-    - name: 安装编译环境
+    env:
+      FOLDER_NAME: ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [Immortalwrt]
+        
+        # 请勿对 target: [Immortalwrt] 做任何修改
+        
+    steps:
+    - name: 密匙检测（密匙为空则退出）
+      run: |
+        cd ${GITHUB_WORKSPACE}
+        if [[ -z "${{ secrets.REPO_TOKEN }}" ]]; then
+          echo "您没有设置仓库密匙，请按教程设置好密匙再来"
+          echo "REPO_TOKEN密匙制作教程：https://git.io/jm.md"
+          exit 1
+        fi
+    
+    - name: 准备结束
+      uses: actions/checkout@v4
+
+    - name: 检测文件和对比上游版本
+      run: |
+        cd ${GITHUB_WORKSPACE}
+        bash <(curl -fsSL https://raw.githubusercontent.com/ShmilyStar/common/main/custom/first.sh)
+        source ${GITHUB_WORKSPACE}/build/${{ env.FOLDER_NAME }}/settings.ini
+        export INPUTS_REPO_BRANCH="${{ github.event.inputs.REPO_BRANCH }}"
+        export INPUTS_CONFIG_FILE="${{ github.event.inputs.CONFIG_FILE }}"
+        export INPUTS_CPU_SELECTION="${{ github.event.inputs.CPU_SELECTION }}"
+        export INPUTS_INFORMATION_NOTICE="${{ github.event.inputs.INFORMATION_NOTICE }}"
+        export INPUTS_SSH_ACTION="${{ github.event.inputs.SSH_ACTION }}"
+        export INPUTS_UPLOAD_FIRMWARE="${{ github.event.inputs.UPLOAD_FIRMWARE }}"
+        export INPUTS_UPLOAD_RELEASE="${{ github.event.inputs.UPLOAD_RELEASE }}"
+        export INPUTS_CACHEWRTBUILD_SWITCH="${{ github.event.inputs.CACHEWRTBUILD_SWITCH }}"
+        export INPUTS_UPDATE_FIRMWARE_ONLINE="${{ github.event.inputs.UPDATE_FIRMWARE_ONLINE }}"
+        export INPUTS_COMPILATION_INFORMATION="${{ github.event.inputs.COMPILATION_INFORMATION }}"
+        export INPUTS_PACKAGING_FIRMWARE="${{ github.event.inputs.PACKAGING_FIRMWARE }}"
+        source build/${{ env.FOLDER_NAME }}/common.sh && Diy_menu1
+
+    - name: 部署编译环境
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
-        sudo bash -c 'bash <(curl -s https://build-scripts.immortalwrt.eu.org/init_build_environment.sh)'
+        sudo -E apt-get -qq update -y
+        sudo -E apt-get -qq install -y gawk git gettext libssl-dev xsltproc zip git-core wget curl grep python2.7 python3 python3-pip libpython3-dev
         sudo timedatectl set-timezone "$TZ"
-        sudo mkdir -p /workdir
-        sudo chown $USER:$GROUPS /workdir
+        sudo mkdir -p /${{ env.DIY_WORK }}
+        sudo chown $USER:$GROUPS /${{ env.DIY_WORK }}
     
-    - name: Telegram 通知
-      if: env.TELEGRAM_TOKEN && ! contains(github.event.action, 'notg')
-      continue-on-error: true
+    - name: 下载"${{ matrix.target }}-${{ github.event.inputs.REPO_BRANCH }}"源码
+      working-directory: /${{ env.DIY_WORK }}
       run: |
-        curl -k --data chat_id="${{ env.TELEGRAM_CHAT_ID }}" --data "text=🎉 OpenWrt ${{ env.VERSION }} ${{matrix.target}} 开始编译 360T7-padavanonly 固件 😋" "https://api.telegram.org/bot${{ env.TELEGRAM_TOKEN }}/sendMessage"        
+        git clone -b "${REPO_BRANCH}" --single-branch "${REPO_URL}" openwrt
+        ln -sf /${{ env.DIY_WORK }}/openwrt ${GITHUB_WORKSPACE}/openwrt
+        cp -Rf ${GITHUB_WORKSPACE}/build ${GITHUB_WORKSPACE}/openwrt/build
+        chmod -R +x ${GITHUB_WORKSPACE}/openwrt/build
     
-    - name: 下载源码
-      working-directory: /workdir
+    - name: 公 告
+      if: env.REPO_TOKEN
       run: |
-        df -hT $PWD
-        git clone $REPO_URL -b $REPO_BRANCH openwrt
-        ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
-
-    - name: 加载软件源
-      run: |
-        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
-        chmod +x $DIY_P1_SH
+        cd ${GITHUB_WORKSPACE}
         cd openwrt
-        $GITHUB_WORKSPACE/$DIY_P1_SH
-
-    - name: 更新软件源
-      run: cd openwrt && ./scripts/feeds update -a
-
-    - name: 安装软件源
-      run: cd openwrt && ./scripts/feeds install -a
-
-    - name: 加载自定义配置
+        source ${BUILD_PATH}/common.sh && Diy_menu2
+ 
+    - name: 更新插件源
+      if: env.REPO_TOKEN
       run: |
-        [ -e files ] && mv files openwrt/files
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
-        chmod +x $DIY_P2_SH
         cd openwrt
-        $GITHUB_WORKSPACE/$DIY_P2_SH
+        source ${BUILD_PATH}/common.sh && Diy_menu3
+ 
+    - name: 加载自定义设置
+      if: env.REPO_TOKEN
+      run: |
+        cd openwrt
+        source ${BUILD_PATH}/common.sh && Diy_menu4
+        
+    - name: 安装插件源
+      if: env.REPO_TOKEN
+      run: |
+        cd openwrt
+        source ${BUILD_PATH}/common.sh && Diy_menu5
+    
+    - name: SSH远程连接（make menuconfig）
+      if: env.SSH_ACTION == 'true'
+      uses: danshui-git/debugger-action@main
 
-    - name: SSH 连接
-      uses: P3TERX/ssh2actions@v1.0.0
-      if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
-      env:
-        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-
-    - name: 上传配置文件在 Github Artifacts
+    - name: 生成"${{ matrix.target }}"配置文件
+      if: env.REPO_TOKEN
+      id: compile
+      run: |
+        cd openwrt
+        source ${BUILD_PATH}/common.sh && Diy_menu6
+        
+    - name: 上传"${{ matrix.target }}"配置文件在 Github Artifacts
+      if: steps.compile.outcome == 'success'
       uses: actions/upload-artifact@main
       with:
         name: .config_${{ env.SOURCE }}_${{ env.LUCI_EDITION }}_${{ env.TARGET_PROFILE }}_${{ env.Firmware_Date }}
