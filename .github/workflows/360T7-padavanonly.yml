@@ -30,12 +30,6 @@ env:
   CONFIG_FILE: ./config/X86-mj.config
   DIY_P1_SH: ./diy/diy-360V6-1.sh
   DIY_P2_SH: ./diy/diy-360V6-2.sh
-  UPLOAD_BIN_DIR: false
-  UPLOAD_FIRMWARE: true
-  UPLOAD_RELEASE: true
-  SCKEY: ${{ secrets.SCKEY }}
-  TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
   TZ: Asia/Shanghai
   
 jobs:
@@ -102,5 +96,5 @@ jobs:
     - name: 上传配置文件在 Github Artifacts
       uses: actions/upload-artifact@main
       with:
-        name: (date +%Y-%m-%d)&.config
+        name: ${{ date +"%Y%m%d%H%M" }}_.config
         path: openwrt/config.txt
