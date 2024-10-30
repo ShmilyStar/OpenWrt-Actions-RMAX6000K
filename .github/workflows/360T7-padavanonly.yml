@@ -10,7 +10,7 @@
 # See /LICENSE for more information.
 #
 
-name: mt7986-512m-bl2_fip
+name: test
 
 on:
   repository_dispatch:
@@ -91,30 +91,4 @@ jobs:
         cd output
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
-      
-    - name: Upload firmware directory
-      uses: actions/upload-artifact@main
-      if: steps.organize.outputs.status == 'success' && !cancelled()
-      with:
-        name: ${{ env.DEVICE_NAME }}-${{ env.FILE_DATE }}
-        path: ${{ env.FIRMWARE }}
-
-    - name: Generate release tag
-      id: tag
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
-      run: |
-        echo "release_tag=bl-mt798x-${{ env.DEVICE_NAME }}-${{ env.FILE_DATE }}" >> $GITHUB_OUTPUT
-        touch release.txt
-        echo "bl-mt798x-${{ env.DEVICE_NAME }}" >> release.txt
-        echo "status=success" >> $GITHUB_OUTPUT
-        
-    - name: Upload firmware to release
-      uses: softprops/action-gh-release@master
-      if: steps.tag.outputs.status == 'success' && !cancelled()
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        files: ${{ env.FIRMWARE }}/*
-        name: ${{ env.DEVICE_NAME }}-${{ env.FILE_DATE }}
-        tag_name: ${{ steps.tag.outputs.release_tag }}
-        body_path: release.txt
+  
