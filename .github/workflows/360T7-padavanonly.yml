@@ -32,7 +32,6 @@ env:
   DIY_P2_SH: ./diy/diy-360V6-2.sh
   DEVICE_NAME: test
   REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
-  FILE_DATE: ${{ date +"%Y%m%d%H%M" }}
   TZ: Asia/Shanghai
   
 jobs:
