@@ -102,5 +102,5 @@ jobs:
     - name: 上传配置文件在 Github Artifacts
       uses: actions/upload-artifact@main
       with:
-        name: .config_${{ env.SOURCE }}_${{ env.LUCI_EDITION }}_${{ env.TARGET_PROFILE }}_${{ env.Firmware_Date }}
+        name: (date +%Y-%m-%d)&.config
         path: openwrt/config.txt
