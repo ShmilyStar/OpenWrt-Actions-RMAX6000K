@@ -31,6 +31,8 @@ env:
   DIY_P1_SH: ./diy/diy-360V6-1.sh
   DIY_P2_SH: ./diy/diy-360V6-2.sh
   DEVICE_NAME: test
+  REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
+  FILE_DATE: ${{ date +"%Y%m%d%H%M" }}
   TZ: Asia/Shanghai
   
 jobs:
@@ -96,10 +98,12 @@ jobs:
 
     - name: Commit and push changes
       run: |
-        cd openwrt
-        git config --global user.name 'ShmilyStar'
-        git config --global user.email 'ShmilyStar@github.com'
-        git commit -m "Add ${{ env.DEVICE_NAME }}.txt to config directory"
+        mkdir -p config
+        cp openwrt/config.txt config/
+        git config --local user.email "93953435@qq.com"  # 替换为你的邮箱
+        git config --local user.name "ShmilyStar"          # 替换为你的名字
+        git add config/config.txt
+        git commit -m "Add config.txt to config directory"
         git push
 
     - name: 上传配置文件在 Github Artifacts
