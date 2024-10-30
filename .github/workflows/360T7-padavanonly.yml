@@ -96,6 +96,7 @@ jobs:
 
     - name: Commit and push changes
       run: |
+        cd openwrt
         git config --global user.name 'ShmilyStar'
         git config --global user.email 'ShmilyStar@github.com'
         git add config/${{ env.DEVICE_NAME }}.txt
