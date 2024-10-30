@@ -30,6 +30,7 @@ env:
   CONFIG_FILE: ./config/X86-mj.config
   DIY_P1_SH: ./diy/diy-360V6-1.sh
   DIY_P2_SH: ./diy/diy-360V6-2.sh
+  DEVICE_NAME: test
   TZ: Asia/Shanghai
   
 jobs:
@@ -96,5 +97,5 @@ jobs:
     - name: 上传配置文件在 Github Artifacts
       uses: actions/upload-artifact@main
       with:
-        name: ${{ date +"%Y%m%d%H%M" }}_.config
+        name: ${{ env.DEVICE_NAME }}-${{ env.$(date +"%Y%m%d%H%M")" }}
         path: openwrt/config.txt
