@@ -98,11 +98,11 @@ jobs:
     - name: Commit and push changes
       run: |
         mkdir -p config
-        cp openwrt/config.txt config/
+        cp openwrt/${{ env.DEVICE_NAME }}.txt config/
         git config --local user.email "93953435@qq.com"  # 替换为你的邮箱
         git config --local user.name "ShmilyStar"          # 替换为你的名字
-        git add config/config.txt
-        git commit -m "Add config.txt to config directory"
+        git add config/${{ env.DEVICE_NAME }}.txt
+        git commit -m "Add ${{ env.DEVICE_NAME }}.txt to config directory"
         git push
 
     - name: 上传配置文件在 Github Artifacts
