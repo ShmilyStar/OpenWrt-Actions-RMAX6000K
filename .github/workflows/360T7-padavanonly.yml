@@ -92,10 +92,10 @@ jobs:
         
     - name: 生成配置文件
       id: compile
-      run: cp openwrt/.config openwrt/config.txt
+      run: cp openwrt/.config openwrt/${{ env.DEVICE_NAME }}.txt
 
     - name: 上传配置文件在 Github Artifacts
       uses: actions/upload-artifact@main
       with:
         name: ${{ env.DEVICE_NAME }}-$(date +'%Y-%m-%d')_.config
-        path: openwrt/config.txt
+        path: openwrt/${{ env.DEVICE_NAME }}.txt
