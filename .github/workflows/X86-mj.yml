@@ -8,40 +8,26 @@
 # Description: Build OpenWrt using GitHub Actions
 #
 
-name: x86-mj
-
-#on:
-#  repository_dispatch:
-#  workflow_dispatch:
-#    inputs:
-#      ssh:
-#        description: 'SSH connection to Actions'
-#        required: false
-#        default: 'false'
-
+name: 生成config
 
 on:
   repository_dispatch:
   workflow_dispatch:
-  #定时触发开始编译
+    inputs:
+      ssh:
+        description: 'SSH connection to Actions'
+        required: false
+        default: 'false'
+
+#定时触发开始编译
   #schedule:
-  #  - cron: 0 12 */7 * *
-  #加星触发开始编译
-  watch:
-    types: [started]
+  #- cron: 0 17 * * 1
 
 env:
-  REPO_URL: https://github.com/immortalwrt/immortalwrt/
-  REPO_BRANCH: openwrt-21.02
   FEEDS_CONF: feeds.conf.default
-  CONFIG_FILE: ./config/X86-mj.config
-  DIY_P1_SH: ./diy/Redmi-AX6000-hanwckf-1.sh
-  DIY_P2_SH: ./diy/Redmi-AX6000-hanwckf-2-mj.sh
-  UPLOAD_BIN_DIR: true
-  UPLOAD_FIRMWARE: true
-  UPLOAD_RELEASE: true
-  SCKEY: ${{ secrets.SCKEY }}
-  BARK_TOKEN: ${{ secrets.BARK_TOKEN }}
+  DIY_P1_SH: ./diy/diy-1.sh
+  DIY_P2_SH: ./diy/diy-2.sh
+  REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
   TZ: Asia/Shanghai
   
 jobs:
@@ -51,24 +37,37 @@ jobs:
     steps:
     - name: 检查
       uses: actions/checkout@main
-    
+
+    - name: Read variables from setting.ini
+      id: read_ini
+      run: |
+        while IFS='=' read -r key value; do
+          if [[ $key != \#* && $key ]]; then  # 跳过注释行和空行
+            echo "$key=$value" >> $GITHUB_ENV
+          fi
+        done < build/setting.ini
+
+    - name: Use the variables
+      run: |
+        echo "REPO_URL: $REPO_URL"
+        echo "REPO_BRANCH: $REPO_BRANCH"
+        echo "DEVICE_NAME: $DEVICE_NAME"
+        echo "CONFIG_FILE: $CONFIG_FILE"
+        
     - name: 安装编译环境
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
-        sudo bash -c 'bash <(curl -s https://build-scripts.immortalwrt.eu.org/init_build_environment.sh)'
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+        sudo docker image prune --all --force
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq install ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libfuse-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libpython3-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
+        sudo -E apt-get -qq autoremove --purge
+        sudo -E apt-get -qq clean
         sudo timedatectl set-timezone "$TZ"
         sudo mkdir -p /workdir
         sudo chown $USER:$GROUPS /workdir
-    
-    # - name: BARK 通知
-      # if: env.BARK_TOKEN
-      # continue-on-error: true
-      # run: |
-        # curl -k https://api.day.app/${{ env.BARK_TOKEN }}/🎉开始编译hanwckf固件
-        
-    
+          
     - name: 下载源码
       working-directory: /workdir
       run: |
@@ -76,12 +75,12 @@ jobs:
         git clone $REPO_URL -b $REPO_BRANCH openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
 
-    #- name: 加载软件源
-    #  run: |
-    #    #[ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
-        #chmod +x $DIY_P1_SH
-        #cd openwrt
-        #$GITHUB_WORKSPACE/$DIY_P1_SH
+    - name: 加载软件源
+      run: |
+        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
+        chmod +x $DIY_P1_SH
+        cd openwrt
+        $GITHUB_WORKSPACE/$DIY_P1_SH
 
     - name: 更新软件源
       run: cd openwrt && ./scripts/feeds update -a
@@ -91,86 +90,38 @@ jobs:
 
     - name: 加载自定义配置
       run: |
+        [ -e files ] && mv files openwrt/files
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
 
-    - name: 下载包
-      id: package
-      run: |
-        cd openwrt
-        make defconfig
-        make download -j8
-        find dl -size -1024c -exec ls -l {} \;
-        find dl -size -1024c -exec rm -f {} \;
-
-    - name: 编译固件
-      id: compile
-      run: |
-        cd openwrt
-        echo -e "$(nproc) thread compile"
-        make -j$(nproc) || make -j1 || make -j1 V=s || (curl -k https://api.day.app/${{ env.BARK_TOKEN }}/编译hanwckf固件失败;exit 1)
-        echo "status=success" >> $GITHUB_OUTPUT
-
-    - name: 检查可用容量
-      if: (!cancelled())
-      run: df -hT
-
-    - name: 上传二进制目录
-      uses: actions/upload-artifact@main
-      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
-      with:
-        name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
-        path: openwrt/bin
-
-    - name: 组织文件
-      id: organize
-      if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
-      run: |
-        cd openwrt/bin/targets/*/*
-        echo "-------------固件列表------------------"
-        ls -alh
-        echo "-------------固件列表------------------"
-        rm -rf packages
-        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
-        echo "status=success" >> $GITHUB_OUTPUT
-
-    - name: 上传固件
-      uses: actions/upload-artifact@main
-      if: steps.organize.outputs.status == 'success' && !cancelled()
-      with:
-        name: ax6000-hanwckf-OpenWrt
-        path: ${{ env.FIRMWARE }}
-
-    - name: 生成标签
-      id: tag
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
-      run: |
-        time=$(date +%Y-%m-%d)
-        Rtime=$(date +%Y-%m-%d-%H-%M)
-        release_tag="ax6000-hanwckf-$Rtime"
-        release_name="ax6000-hanwckf-$Rtime"
-        echo "默认网关：192.168.10.1
-        默认密码：password" >> release.txt
-        echo "release_name=$release_name" >> $GITHUB_OUTPUT
-        echo "release_tag=$release_tag" >> $GITHUB_OUTPUT
-        echo "status=success" >> $GITHUB_OUTPUT
-        
-    - name: 上传固件至项目
-      uses: softprops/action-gh-release@v1
-      if: steps.tag.outputs.status == 'success' && !cancelled()
+    - name: SSH 连接
+      uses: P3TERX/ssh2actions@v1.0.0
+      if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        name: ${{ steps.tag.outputs.release_name }} 
-        tag_name: ${{ steps.tag.outputs.release_tag }}
-        body_path: release.txt
-        files: ${{ env.FIRMWARE }}/*
-
-    # - name: BARK 通知
-      # if: env.BARK_TOKEN
-      # continue-on-error: true
-      # run: |
-        # curl -k https://api.day.app/${{ env.BARK_TOKEN }}/🎉编译固件完成
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         
+    - name: 生成配置文件
+      id: compile
+      run: cp openwrt/.config openwrt/${{ env.DEVICE_NAME }}.txt
+
+    - name: Commit and push changes
+      run: |
+        mkdir -p config
+        cp openwrt/${{ env.DEVICE_NAME }}.txt config/
+        git config --local user.name "ShmilyStar"  # 替换为你的名字
+        if [[ -n "$(git status --porcelain)" ]]; then
+          git add config/${{ env.DEVICE_NAME }}.txt
+          git commit -m "Add ${{ env.DEVICE_NAME }}.txt to config directory"
+          git push https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/ShmilyStar/OpenWrt-Actions-Compile.git HEAD:main
+        else
+          echo "No changes to commit"
+        fi
+
+    - name: 上传配置文件在 Github Artifacts
+      uses: actions/upload-artifact@main
+      with:
+        name: "${{ env.DEVICE_NAME }}_.config"
+        path: openwrt/${{ env.DEVICE_NAME }}.txt
